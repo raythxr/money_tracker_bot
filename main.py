@@ -1,5 +1,6 @@
 import json
 import telebot
+from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 from config import TOKEN, API_URL
 from telebot import apihelper
 apihelper.API_URL = API_URL
@@ -19,6 +20,18 @@ def save_data():
 
 user_expenses = load_data()
 
+def get_main_keyboard():
+    markup = ReplyKeyboardMarkup(resize_keyboard=True)
+
+    btn_add = KeyboardButton('Добавить трату')
+    btn_stats = KeyboardButton('Статистика')
+    btn_total = KeyboardButton("Сумма трат")
+    btn_clear = KeyboardButton("Очистить все траты")
+
+    markup.add(btn_add, btn_stats)
+    markup.add(btn_clear, btn_total)
+    return markup
+
 @bot.message_handler(commands=['clear'])
 def clear_expenses(message):
     user_id = str(message.from_user.id)
@@ -32,7 +45,23 @@ def clear_expenses(message):
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
     name = message.from_user.first_name
-    bot.send_message(message.chat.id, f"Привет {name}! Я твой финансовый трекер.\nМои комманды:\n/add - Записать новую трату \n (Например: 1000 Фастфуд)\n/stats - посмотреть статистику трат \n/total - посмотреть все траты\n/clear - очистить историю трат")
+    bot.reply_to(message, f"Привет, {name}!\nВыберите действие:", reply_markup=get_main_keyboard())
+
+@bot.message_handler(func=lambda message: message.text == "Сумма трат")
+def handle_total_button(message):
+    check_total(message)
+
+@bot.message_handler(func=lambda message: message.text == "Статистика")
+def handle_stats_button(message):
+    check_stats(message)
+
+@bot.message_handler(func=lambda message: message.text == "Очистить все траты")
+def handle_clear_button(message):
+    clear_expenses(message)
+
+@bot.message_handler(func=lambda message: message.text == "Добавить трату")
+def handle_add_button(message):
+    bot.reply_to(message,"Напиши команду в формате: /add 500 Фастфуд")
 
 @bot.message_handler(commands=['total'])
 def check_total(message):
